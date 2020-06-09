@@ -17,11 +17,36 @@ struct Simulator
     void MultiplyViscosity(double mul) { visc *= mul; }
     void IncreaseTimestep(float val) { dt += val;}
     void DecreaseTimestep(float val) { dt -= val;}
-    void AddForce(uint32_t x, uint32_t y, double val_x, double val_y);
+	void AddForce(uint32_t x, uint32_t y, double val_x, double val_y);
+	double GetForce(uint32_t x, uint32_t y);
+	double GetForceX(uint32_t x, uint32_t y);
+	double GetForceY(uint32_t x, uint32_t y);
     void SetDensity(uint32_t x, uint32_t y, double val) { rho[y * dim + x] = val; }
     double GetDensity(uint32_t x, uint32_t y) { return rho[y * dim + x];}
-    double GetVelocityX(uint32_t x, uint32_t y) { return vx[y * dim + x];}
-    double GetVelocityY(uint32_t x, uint32_t y) { return vy[y * dim + x];}
+    double GetDensityIso(uint32_t x) { return rho[x];}
+    double GetVelocityX(uint32_t x, uint32_t y) { 
+		int temp_x;
+		if ((x - 1) < 0) {
+			temp_x = x;
+		}
+		else {
+			temp_x = x - 1;
+		}
+		
+		return vx[y * dim + x] - vx[y * dim + temp_x];
+	}
+    double GetVelocityY(uint32_t x, uint32_t y) { 
+		int temp_y;
+		if ((y - 1) < 0) {
+			temp_y = y;
+		}
+		else {
+			temp_y = y - 1;
+		}
+
+		return vy[y * dim + x] - vy[temp_y * dim + x];
+	}
+	double GetVelocity(uint32_t x, uint32_t y) { return (sqrt(pow(GetVelocityX(x, y), 2) + pow(GetVelocityY(x, y), 2))); }
 
     uint32_t DIM() { return dim;}
 

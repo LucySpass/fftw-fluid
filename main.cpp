@@ -5,6 +5,7 @@
 #include <GLFW/glfw3.h>
 #include <cmath>
 #include <memory>
+#include "main.h"
 
 static const GLsizei WIDTH = 1024, HEIGHT = 1024;
 
@@ -69,11 +70,15 @@ static void key(GLFWwindow* window, int k, int s, int action, int mods)
     case GLFW_KEY_N: pSim->ToggleFreezeSim(); break;
 
     case GLFW_KEY_C: pVis->NextDirectionColormap(); break;
-    case GLFW_KEY_S: pVis->MultiplyGlyphLength(1.2f); break;
-    case GLFW_KEY_A: pVis->MultiplyGlyphLength(0.8f); break;
+    case GLFW_KEY_K: pVis->MultiplyGlyphLength(1.2f); break;
+    case GLFW_KEY_L: pVis->MultiplyGlyphLength(0.8f); break;
     case GLFW_KEY_X: pVis->ToggleDrawSmoke(); break;
     case GLFW_KEY_Z: pVis->ToggleDrawGlyphs(); break;
-    case GLFW_KEY_M: pVis->NextScalarColormap(); break;
+
+    case GLFW_KEY_W: pVis->NextScalarColormap(); break;
+    case GLFW_KEY_A: pVis->NextScalarObject(); break;
+	case GLFW_KEY_S: pVis->NextGlyphType(); break;
+	case GLFW_KEY_D: pVis->NextIsolineType(); break;
     
     case GLFW_KEY_ESCAPE: exit(0);
     case GLFW_KEY_SPACE:
@@ -102,17 +107,14 @@ int initGL()
 		return -1;
 	}
 
-	std::cout << "Vendor: "   << glGetString(GL_VENDOR) << std::endl;
-	std::cout << "Renderer: " << glGetString(GL_RENDERER) << std::endl;
-	std::cout << "Version: "  << glGetString(GL_VERSION) << std::endl;
-	std::cout << "GLSL: "     << glGetString(GL_SHADING_LANGUAGE_VERSION) << std::endl;
+	std::cout << "Sucessfully initialized OpenGL context" << std::endl;
 
 	return 0;
 }
 
 int main(int argc, char** argv)
 {
-  int grid_size = 128;
+	int grid_size = 128;
 
 	if(!glfwInit())
     return -1;
@@ -122,7 +124,7 @@ int main(int argc, char** argv)
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 
-  GLFWwindow*  window = glfwCreateWindow(WIDTH, HEIGHT, "Fluid sim visualization", nullptr, nullptr);
+  GLFWwindow*  window = glfwCreateWindow(WIDTH, HEIGHT, "Begovic Pogonina Sypalo Korobka", nullptr, nullptr);
 	if (window == nullptr)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;

@@ -11,6 +11,21 @@ void Simulator::AddForce(uint32_t x, uint32_t y, double val_x, double val_y)
   fy[y * dim + x] += val_y;
 }
 
+double Simulator::GetForce(uint32_t x, uint32_t y)
+{
+	return sqrt(pow(fx[y * dim + x], 2) + pow(fy[y * dim + x], 2));
+}
+
+double Simulator::GetForceX(uint32_t x, uint32_t y)
+{
+	return fx[y * dim + x];
+}
+
+double Simulator::GetForceY(uint32_t x, uint32_t y)
+{
+	return fy[y * dim + x];
+}
+
 void Simulator::InitSimulation(int n)
 {
   int i; 
@@ -114,7 +129,11 @@ void Simulator::Solve(int n)
   int i, j, i0, j0, i1, j1;
 
   for (i = 0; i < n * n; i++)
-  { vx[i] += dt * vx0[i]; vx0[i] = vx[i]; vy[i] += dt * vy0[i]; vy0[i] = vy[i]; }
+  { 
+	  vx[i] += dt * vx0[i]; 
+	  vx0[i] = vx[i]; vy[i] += dt * vy0[i]; 
+	  vy0[i] = vy[i]; 
+  }
 
   for (x = (0.5f/n), i = 0 ; i < n ; i++, x += (1.0f / n))
   {
