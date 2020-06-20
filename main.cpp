@@ -79,9 +79,13 @@ static void key(GLFWwindow* window, int k, int s, int action, int mods)
 	case GLFW_KEY_A: pVis->NextScalarObject(); break;
 	case GLFW_KEY_S: pVis->NextGlyphType(); break;
 	case GLFW_KEY_D: pVis->NextIsolineType(); break;
-	
+
 		// градиент - производная скалярного поля по направлению вектора
 	case GLFW_KEY_O: pVis->NextGradientObject(); break;
+		// дивергенция - это линейный дифференциальный оператор на векторном поле, 
+		// характеризующий поток данного поля через поверхность достаточно малой 
+		// (в условиях конкретной задачи) окрестности каждой внутренней точки области определения поля
+	case GLFW_KEY_P: pVis->NextDivergenceObject(); break;
 
 	case GLFW_KEY_ESCAPE: exit(0);
 	case GLFW_KEY_SPACE:
@@ -127,10 +131,11 @@ int initGL()
 	std::cout << "A - see next scalar object" << std::endl;
 	std::cout << "S - see next glyph type" << std::endl;
 	std::cout << "D - see next isoline type" << std::endl;
-	std::cout << "O - see next gradient type" << std::endl;
-	std::cout << "P - toggle gradient" << std::endl;
+	std::cout << "O - see next gradient object" << std::endl;
+	std::cout << "P - see next divergence object" << std::endl;
 	std::cout << "Escape - exit the simulation" << std::endl;
 	std::cout << "Space - change polygon mode" << std::endl;
+	std::cout << "Made by: Begovic, Korobka, Pogonina, Sypalo" << std::endl;
 	return 0;
 }
 

@@ -5,7 +5,6 @@
 #include <cmath>
 #include <cstdint>
 
-
 struct Simulator
 {
 	Simulator() = default;
@@ -21,21 +20,33 @@ struct Simulator
 		fx[y * dim + x] += val_x;
 		fy[y * dim + x] += val_y;
 	};
-	double GetForce(uint32_t x, uint32_t y) {
-		return sqrt(pow(fx[y * dim + x], 2) + pow(fy[y * dim + x], 2));
-	};
 	double GetForceX(uint32_t x, uint32_t y) {
 		return fx[y * dim + x];
 	};
 	double GetForceY(uint32_t x, uint32_t y) {
 		return fy[y * dim + x];
 	};
-	void SetDensity(uint32_t x, uint32_t y, double val) { rho[y * dim + x] = val; }
-	double GetDensity(uint32_t x, uint32_t y) { return rho[y * dim + x]; }
-	double GetDensityIso(uint32_t x) { return rho[x]; }
-	double GetVelocityX(uint32_t x, uint32_t y) { return vx[y * dim + x]; }
-	double GetVelocityY(uint32_t x, uint32_t y) { return vy[y * dim + x]; }
-	double GetVelocity(uint32_t x, uint32_t y) { return (sqrt(pow(GetVelocityX(x, y), 2) + pow(GetVelocityY(x, y), 2))); }
+	double GetForce(uint32_t x, uint32_t y) {
+		return sqrt(pow(GetForceX(x, y), 2) + pow(GetForceX(x, y), 2));
+	};
+	void SetDensity(uint32_t x, uint32_t y, double val) {
+		rho[y * dim + x] = val;
+	}
+	double GetDensity(uint32_t x, uint32_t y) {
+		return rho[y * dim + x];
+	}
+	double GetDensityIso(uint32_t x) {
+		return rho[x];
+	}
+	double GetVelocityX(uint32_t x, uint32_t y) {
+		return vx[y * dim + x];
+	}
+	double GetVelocityY(uint32_t x, uint32_t y) {
+		return vy[y * dim + x];
+	}
+	double GetVelocity(uint32_t x, uint32_t y) {
+		return (sqrt(pow(GetVelocityX(x, y), 2) + pow(GetVelocityY(x, y), 2)));
+	}
 
 	uint32_t DIM() { return dim; }
 

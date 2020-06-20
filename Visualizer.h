@@ -30,11 +30,18 @@ struct Visualizer
 		CountScalarObjects,
 	};
 
-	enum GradientScalarObjects {
+	enum GradientObjects {
 		GRADIENT_NONE,
 		GRADIENT_VELOCITY,
 		GRADIENT_DENSITY,
-		CountGradientScalarObjects,
+		CountGradientObjects,
+	};
+
+	enum DivergenceObjects {
+		DIVERGENCE_NONE,
+		DIVERGENCE_VELOCITY,
+		DIVERGENCE_FORCE,
+		CountDivergenceObjects,
 	};
 
 	enum GlyphTypes {
@@ -60,7 +67,7 @@ struct Visualizer
 	void NextDirectionColormap()
 	{
 		colormap_dir = (colormap_dir + 1) % ((int)Colormaps::CountColormaps);
-		
+
 		std::string colorName = "";
 		switch (colormap_dir)
 		{
@@ -114,13 +121,16 @@ struct Visualizer
 		switch (glyph_type)
 		{
 		case 0:
-			glyphName = "VELOCITY";
+			glyphName = "POINTS";
 			break;
 		case 1:
-			glyphName = "FORCE";
+			glyphName = "LINE_LOOP";
 			break;
 		case 2:
-			glyphName = "DENSITY";
+			glyphName = "TRIANGLES";
+			break;
+		case 3:
+			glyphName = "PATCHES";
 			break;
 		default:
 			break;
@@ -148,7 +158,11 @@ struct Visualizer
 		std::cout << "Current isoline type: " << isolineName << std::endl;
 	}
 	void NextGradientObject() {
-		gradient_object = (gradient_object + 1) % ((int)GradientScalarObjects::CountGradientScalarObjects);
+		gradient_object = (gradient_object + 1) % ((int)GradientObjects::CountGradientObjects);
+
+		if (gradient_object != GRADIENT_NONE) {
+			glyph_type == TRIANGLES;
+		}
 
 		std::string gradientName = "";
 		switch (gradient_object)
@@ -157,34 +171,52 @@ struct Visualizer
 			gradientName = "NONE";
 			break;
 		case 1:
+			object_scalar = VELOCITY;
+			std::cout << "Current scalar object: " << "VELOCITY" << std::endl;
 			gradientName = "GRADIENT_VELOCITY";
 			break;
 		case 2:
+			object_scalar = DENSITY;
+			std::cout << "Current scalar object: " << "DENSITY" << std::endl;
 			gradientName = "GRADIENT_DENSITY";
 			break;
 		default:
 			break;
 		}
-		std::cout << "Current gradient type: " << gradientName << std::endl;
+
+		std::cout << "Current gradient object: " << gradientName << std::endl;
 	}
-	void NextScalarColormap() { 
-		colormap_scalar = (colormap_scalar + 1) % n_scalar_colormaps; 
-	
-		std::string scalarColormapName = "";
-		switch (colormap_scalar)
+	void NextDivergenceObject() {
+		divergence_object = (divergence_object + 1) % ((int)DivergenceObjects::CountDivergenceObjects);
+
+		std::string divergenceName = "";
+		switch (divergence_object)
 		{
 		case 0:
-			scalarColormapName = "GRADIENT_VELOCITY";
+			divergenceName = "NONE";
 			break;
 		case 1:
-			scalarColormapName = "GRADIENT_DENSITY";
+			object_scalar = VELOCITY;
+			std::cout << "Current scalar object: " << "VELOCITY" << std::endl;
+			divergenceName = "DIVERGENCE_VELOCITY";
+			break;
+		case 2:
+			object_scalar = FORCE;
+			std::cout << "Current scalar object: " << "FORCE" << std::endl;
+			divergenceName = "DIVERGENCE_FORCE";
 			break;
 		default:
 			break;
 		}
-		std::cout << "Current colormap scalar type: " << scalarColormapName << std::endl;
+		std::cout << "Current divergence object: " << divergenceName << std::endl;
 	}
-	void MultiplyGlyphLength(double mul) { vec_scale *= mul; }
+	void NextScalarColormap() {
+		colormap_scalar = (colormap_scalar + 1) % n_scalar_colormaps;
+	}
+	void MultiplyGlyphLength(double mul) {
+		vec_scale *= mul;
+		std::cout << "Current glyph length: " << vec_scale << std::endl;
+	}
 
 	//Initialize and bind empty buffers; generate mesh grid 
 	// n - grid size
@@ -213,7 +245,8 @@ private:
 	uint32_t object_scalar = VELOCITY;
 	uint32_t glyph_type = POINTS;
 	uint32_t isoline_type = ISOLINE_NONE;
-	uint32_t gradient_object = GRADIENT_VELOCITY;
+	uint32_t gradient_object = GRADIENT_NONE;
+	uint32_t divergence_object = DIVERGENCE_NONE;
 
 	int m_grid_dim;
 	uint32_t m_width;
@@ -226,7 +259,7 @@ private:
 	std::vector<uint32_t> indices;
 
 	///isoline
-	float* iso_pos, * iso_col;
+	float* position, * column;
 
 	GLuint vertexLocation = 0;
 	GLuint colorLocation = 1;

@@ -44,6 +44,15 @@ void Visualizer::Colormap(float val, float& R, float& G, float& B)
 		val = ceilf(val) / NLEVELS;
 		rainbow(val, R, G, B);
 	}
+	else if (colormap_scalar == RANDOM) {
+		random(val, R, G, B);
+	}
+	else if (colormap_scalar == PINK_CIAN) {
+		pinkCian(val, R, G, B);
+	}
+	else if (colormap_scalar == OCEAN) {
+		ocean(val, R, G, B);
+	}
 }
 void Visualizer::Direction2DToColor(float x, float y, int method, float& r, float& g, float& b)
 {
@@ -195,15 +204,15 @@ void Visualizer::Init(int n, uint32_t width, uint32_t height)
 	glBindVertexArray(0);
 
 	//////////////////////////////////////
-	iso_pos = (float*)malloc(n * n * 4 * sizeof(float));
-	iso_col = (float*)malloc(n * n * 6 * sizeof(float));
+	position = (float*)malloc(n * n * 4 * sizeof(float));
+	column = (float*)malloc(n * n * 6 * sizeof(float));
 	glGenBuffers(1, &sim_vbo_izo); GL_CHECK_ERRORS;
 	glGenBuffers(1, &vbo_izo_col); GL_CHECK_ERRORS;
 
 	glBindBuffer(GL_ARRAY_BUFFER, sim_vbo_izo); GL_CHECK_ERRORS;
-	glBufferData(GL_ARRAY_BUFFER, n * n * 2 * sizeof(GLfloat), iso_pos, GL_STREAM_DRAW); GL_CHECK_ERRORS;
+	glBufferData(GL_ARRAY_BUFFER, n * n * 2 * sizeof(GLfloat), position, GL_STREAM_DRAW); GL_CHECK_ERRORS;
 	glBindBuffer(GL_ARRAY_BUFFER, vbo_izo_col); GL_CHECK_ERRORS;
-	glBufferData(GL_ARRAY_BUFFER, n * n * 3 * sizeof(GLfloat), iso_col, GL_STREAM_DRAW); GL_CHECK_ERRORS;
+	glBufferData(GL_ARRAY_BUFFER, n * n * 3 * sizeof(GLfloat), column, GL_STREAM_DRAW); GL_CHECK_ERRORS;
 
 	glGenVertexArrays(1, &sim_vao_izo); GL_CHECK_ERRORS;
 	glBindVertexArray(sim_vao_izo); GL_CHECK_ERRORS;
@@ -238,6 +247,8 @@ void Visualizer::UpdateBuffers(const std::shared_ptr<Simulator>& pSim)
 
 	if (draw_smoke)
 	{
+
+		std::cout << draw_smoke << std::endl;
 		int k = 0;
 		int c = 0;
 		for (i = 0; i < m_grid_dim; i++)			//draw smoke
@@ -278,11 +289,6 @@ void Visualizer::UpdateBuffers(const std::shared_ptr<Simulator>& pSim)
 		glBufferData(GL_ARRAY_BUFFER, m_grid_dim * m_grid_dim * 3 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); GL_CHECK_ERRORS;
 		glBufferSubData(GL_ARRAY_BUFFER, 0, m_grid_dim * m_grid_dim * 3 * sizeof(GLfloat), smoke_col.data());      GL_CHECK_ERRORS;
 
-		//    glEnable(GL_PRIMITIVE_RESTART); GL_CHECK_ERRORS;
-		//    glPrimitiveRestartIndex(primRestart); GL_CHECK_ERRORS;
-		//    glDrawElements(GL_TRIANGLE_STRIP, numIndices, GL_UNSIGNED_INT, nullptr);
-		//    glDisable(GL_PRIMITIVE_RESTART); GL_CHECK_ERRORS;
-		//    glDrawArrays(GL_TRIANGLE_STRIP, 0, n_verts_grid);
 		glBindVertexArray(0);
 	}
 
@@ -292,37 +298,66 @@ void Visualizer::UpdateBuffers(const std::shared_ptr<Simulator>& pSim)
 		{
 			for (j = 0; j < m_grid_dim; j++)
 			{
+				int temp_i = (i - 1) < 0 ? 0 : (i - 0);
+				int temp_j = (j - 1) < 0 ? 0 : (j - 1);
+
 				float r, g, b;
 				if (object_scalar == VELOCITY) {
-					ScalarToColor(pSim->GetVelocity(i, j) * ColorMapKfVelocity, colormap_dir, r, g, b);
+					if (gradient_object == GRADIENT_VELOCITY) {
+						ScalarToColor((pSim->GetVelocity(i, j) - pSim->GetVelocity(temp_i, temp_j)) * ColorMapKfVelocity, colormap_dir, r, g, b);
+					}
+					else if (divergence_object == DIVERGENCE_VELOCITY) {
+						ScalarToColor((pSim->GetVelocityX(i, j) - pSim->GetVelocityX(temp_i, j)) +
+							(pSim->GetVelocityY(i, j) - pSim->GetVelocityY(i, temp_j)) * ColorMapKfVelocity, colormap_dir, r, g, b);
+					}
+					else {
+						ScalarToColor(pSim->GetVelocity(i, j) * ColorMapKfVelocity, colormap_dir, r, g, b);
+					}
 				}
 				else if (object_scalar == FORCE) {
-					ScalarToColor(pSim->GetForce(i, j) * ColorMapKfForce, colormap_dir, r, g, b);
+					if (divergence_object == DIVERGENCE_FORCE) {
+						ScalarToColor((pSim->GetForceX(i, j) - pSim->GetForceX(temp_i, j)) +
+							(pSim->GetForceY(i, j) - pSim->GetForceY(i, temp_j)) * ColorMapKfForce, colormap_dir, r, g, b);
+					}
+					else {
+						ScalarToColor(pSim->GetForce(i, j) * ColorMapKfForce, colormap_dir, r, g, b);
+					}
 				}
 				else if (object_scalar == DENSITY) {
-					ScalarToColor(pSim->GetDensity(i, j), colormap_dir, r, g, b);
+					if (gradient_object == GRADIENT_DENSITY) {
+						ScalarToColor((pSim->GetDensity(i, j) - pSim->GetDensity(temp_i, temp_j)), colormap_dir, r, g, b);
+					}
+					else {
+						ScalarToColor(pSim->GetDensity(i, j), colormap_dir, r, g, b);
+					}
 				}
 
 				double x1, y1, x2, y2;
+				int temp4 = (i * m_grid_dim + j) * 4;
+				int temp6 = (i * m_grid_dim + j) * 6;
 
 				/// Величина и направление глифа
 				x1 = wn + (double)i * wn;
 				y1 = hn + (double)j * hn;
+
+
+
 				x2 = x1 + vec_scale * pSim->GetVelocityX(i, j);
 				y2 = y1 + vec_scale * pSim->GetVelocityY(i, j);
 
-				vec_pos[(i * m_grid_dim + j) * 4 + 0] = coeff_x * x1 - 1.0f;
-				vec_pos[(i * m_grid_dim + j) * 4 + 1] = coeff_y * y1 - 1.0f;
-				vec_pos[(i * m_grid_dim + j) * 4 + 2] = coeff_x * x2 - 1.0f;
-				vec_pos[(i * m_grid_dim + j) * 4 + 3] = coeff_x * y2 - 1.0f;
 
-				vec_col[(i * m_grid_dim + j) * 6 + 0] = r;
-				vec_col[(i * m_grid_dim + j) * 6 + 1] = g;
-				vec_col[(i * m_grid_dim + j) * 6 + 2] = b;
+				vec_pos[temp4 + 0] = coeff_x * x1 - 1.0f;
+				vec_pos[temp4 + 1] = coeff_y * y1 - 1.0f;
+				vec_pos[temp4 + 2] = coeff_x * x2 - 1.0f;
+				vec_pos[temp4 + 3] = coeff_x * y2 - 1.0f;
 
-				vec_col[(i * m_grid_dim + j) * 6 + 3] = r;
-				vec_col[(i * m_grid_dim + j) * 6 + 4] = g;
-				vec_col[(i * m_grid_dim + j) * 6 + 5] = b;
+				vec_col[temp6 + 0] = r;
+				vec_col[temp6 + 1] = g;
+				vec_col[temp6 + 2] = b;
+
+				vec_col[temp6 + 3] = r;
+				vec_col[temp6 + 4] = g;
+				vec_col[temp6 + 5] = b;
 			}
 		}
 
@@ -384,14 +419,17 @@ void Visualizer::DrawIsoline(const std::shared_ptr<Simulator>& pSim) {
 
 				float r, g, b;
 
+				int temp4 = (i * m_grid_dim + j) * 4;
+				int temp6 = (i * m_grid_dim + j) * 6;
+
 				r = g = b = 1;
 
-				iso_col[(i * m_grid_dim + j) * 6 + 0] = r;
-				iso_col[(i * m_grid_dim + j) * 6 + 1] = g;
-				iso_col[(i * m_grid_dim + j) * 6 + 2] = b;
-				iso_col[(i * m_grid_dim + j) * 6 + 3] = r;
-				iso_col[(i * m_grid_dim + j) * 6 + 4] = g;
-				iso_col[(i * m_grid_dim + j) * 6 + 5] = b;
+				column[temp6 + 0] = r;
+				column[temp6 + 1] = g;
+				column[temp6 + 2] = b;
+				column[temp6 + 3] = r;
+				column[temp6 + 4] = g;
+				column[temp6 + 5] = b;
 
 				int bl = pSim->GetDensityIso(idx) >= rho0;
 				int tl = pSim->GetDensityIso(idx + 1) >= rho0;
@@ -406,75 +444,64 @@ void Visualizer::DrawIsoline(const std::shared_ptr<Simulator>& pSim) {
 				float px = wn + (double)i * wn;
 				float py = hn + (double)j * hn;
 
+
 				switch (config)
 				{
 				case 0:
 					break;
 
 				case 1:
-					iso_pos[(i * m_grid_dim + j) * 4 + 0] = px;
-					iso_pos[(i * m_grid_dim + j) * 4 + 1] = py;
-					iso_pos[(i * m_grid_dim + j) * 4 + 2] = px + wn / 2;
-					iso_pos[(i * m_grid_dim + j) * 4 + 3] = py + hn / 2;
+					position[temp4 + 0] = px;
+					position[temp4 + 1] = py;
+					position[temp4 + 2] = px + wn / 2;
+					position[temp4 + 3] = py + hn / 2;
 					break;
 
 				case 2:
-					iso_pos[(i * m_grid_dim + j) * 4 + 1] = py + hn / 2;
-					iso_pos[(i * m_grid_dim + j) * 4 + 0] = px + wn / 2;
-					iso_pos[(i * m_grid_dim + j) * 4 + 2] = px;
-					iso_pos[(i * m_grid_dim + j) * 4 + 3] = py - hn / 2;
+					position[temp4 + 0] = px + wn / 2;
+					position[temp4 + 1] = py + hn / 2;
+					position[temp4 + 2] = px;
+					position[temp4 + 3] = py - hn / 2;
 					break;
 
 				case 3:
-					iso_pos[(i * m_grid_dim + j) * 4 + 0] = px + wn;
-					iso_pos[(i * m_grid_dim + j) * 4 + 1] = py;
-					iso_pos[(i * m_grid_dim + j) * 4 + 2] = px + wn / 2;
-					iso_pos[(i * m_grid_dim + j) * 4 + 3] = py + hn / 2;
+					position[temp4 + 0] = px + wn;
+					position[temp4 + 1] = py;
+					position[temp4 + 2] = px + wn / 2;
+					position[temp4 + 3] = py + hn / 2;
 					break;
 
 				case 4:
-					iso_pos[(i * m_grid_dim + j) * 4 + 0] = px;
-					iso_pos[(i * m_grid_dim + j) * 4 + 1] = py + hn / 2;
-					iso_pos[(i * m_grid_dim + j) * 4 + 2] = px + wn;
-					iso_pos[(i * m_grid_dim + j) * 4 + 3] = py + hn;
+					position[temp4 + 0] = px;
+					position[temp4 + 1] = py + hn / 2;
+					position[temp4 + 2] = px + wn;
+					position[temp4 + 3] = py + hn;
 					break;
 
 				case 5:
-					iso_pos[(i * m_grid_dim + j) * 4 + 0] = px + wn;
-					iso_pos[(i * m_grid_dim + j) * 4 + 1] = py + hn / 2;
-					iso_pos[(i * m_grid_dim + j) * 4 + 2] = px + wn / 2;
-					iso_pos[(i * m_grid_dim + j) * 4 + 3] = py + hn;
-					break;
-
 				case 6:
-					iso_pos[(i * m_grid_dim + j) * 4 + 0] = px + wn;
-					iso_pos[(i * m_grid_dim + j) * 4 + 1] = py + hn / 2;
-					iso_pos[(i * m_grid_dim + j) * 4 + 2] = px + wn / 2;
-					iso_pos[(i * m_grid_dim + j) * 4 + 3] = py + hn;
-					break;
-
 				case 7:
-					iso_pos[(i * m_grid_dim + j) * 4 + 0] = px + wn;
-					iso_pos[(i * m_grid_dim + j) * 4 + 1] = py + hn / 2;
-					iso_pos[(i * m_grid_dim + j) * 4 + 2] = px + wn / 2;
-					iso_pos[(i * m_grid_dim + j) * 4 + 3] = py + hn;
+					position[temp4 + 0] = px + wn;
+					position[temp4 + 1] = py + hn / 2;
+					position[temp4 + 2] = px + wn / 2;
+					position[temp4 + 3] = py + hn;
 					break;
 				}
 
-				iso_pos[(i * m_grid_dim + j) * 4 + 0] = iso_pos[(i * m_grid_dim + j) * 4 + 0] * coeff_x - 1.0f;
-				iso_pos[(i * m_grid_dim + j) * 4 + 1] = iso_pos[(i * m_grid_dim + j) * 4 + 1] * coeff_y - 1.0f;
-				iso_pos[(i * m_grid_dim + j) * 4 + 2] = iso_pos[(i * m_grid_dim + j) * 4 + 2] * coeff_x - 1.0f;
-				iso_pos[(i * m_grid_dim + j) * 4 + 3] = iso_pos[(i * m_grid_dim + j) * 4 + 3] * coeff_y - 1.0f;
+				position[temp4 + 0] = position[temp4 + 0] * coeff_x - 1.0f;
+				position[temp4 + 1] = position[temp4 + 1] * coeff_y - 1.0f;
+				position[temp4 + 2] = position[temp4 + 2] * coeff_x - 1.0f;
+				position[temp4 + 3] = position[temp4 + 3] * coeff_y - 1.0f;
 			}
 		}
 
 		glBindVertexArray(sim_vao_izo);  GL_CHECK_ERRORS;
 		glBindBuffer(GL_ARRAY_BUFFER, sim_vbo_izo);  GL_CHECK_ERRORS;
 		glBufferData(GL_ARRAY_BUFFER, m_grid_dim * m_grid_dim * 4 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); GL_CHECK_ERRORS;
-		glBufferSubData(GL_ARRAY_BUFFER, 0, m_grid_dim * m_grid_dim * 4 * sizeof(GLfloat), iso_pos);   GL_CHECK_ERRORS;
+		glBufferSubData(GL_ARRAY_BUFFER, 0, m_grid_dim * m_grid_dim * 4 * sizeof(GLfloat), position);   GL_CHECK_ERRORS;
 		glBindBuffer(GL_ARRAY_BUFFER, vbo_izo_col);   GL_CHECK_ERRORS;
 		glBufferData(GL_ARRAY_BUFFER, m_grid_dim * m_grid_dim * 6 * sizeof(GLfloat), NULL, GL_STREAM_DRAW); GL_CHECK_ERRORS;
-		glBufferSubData(GL_ARRAY_BUFFER, 0, m_grid_dim * m_grid_dim * 6 * sizeof(GLfloat), iso_col);  GL_CHECK_ERRORS;
+		glBufferSubData(GL_ARRAY_BUFFER, 0, m_grid_dim * m_grid_dim * 6 * sizeof(GLfloat), column);  GL_CHECK_ERRORS;
 		glDrawArrays(GL_LINES, 0, m_grid_dim * m_grid_dim * 2);
 
 		glBindVertexArray(0);
